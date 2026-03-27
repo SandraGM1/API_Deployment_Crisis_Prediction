@@ -5,3 +5,4 @@ scikit-learn
 xgboost
 openpyxl
 gunicorn
+scikit-learn==1.7.2
