@@ -14,10 +14,18 @@ last_prediction = None
 app = Flask(__name__) #instancia aplicacion de flask
 
 # Carga el modelo
+# def load_model():
+#     with open("modelo_xgb.pkl", "rb") as f:
+#         return pickle.load(f)
+# model = load_model()
 def load_model():
-    with open("modelo_xgb.pkl", "rb") as f:
+    BASE = os.path.dirname(os.path.abspath(__file__))
+    model_path = os.path.join(BASE, "modelo_xgb.pkl")
+    with open(model_path, "rb") as f:
         return pickle.load(f)
+
 model = load_model()
+
 #threshold definido en la API, lo ponemos aquí porque guardamos el modelo sin definir el threshold y además así podemos cambiarlo.
 THRESHOLD = 0.45
 
