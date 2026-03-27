@@ -176,8 +176,12 @@ def train_model():
 
 
     #gyardar modelo y pipeline completo
-    with open("modelo_xgb.pkl", "wb") as f:
-        pickle.dump(pipe, f)
+    # with open("modelo_xgb.pkl", "wb") as f:
+    #     pickle.dump(pipe, f)
         
+    model_path = os.path.join(BASE, "modelo_xgb.pkl")
+    with open(model_path, "wb") as f:
+        pickle.dump(pipe, f)
+
     print("Modelo guardado correctamente")
 
