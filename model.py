@@ -79,10 +79,17 @@ def construir_target(df, target):
 
 #train
 def train_model():
+    BASE = os.path.dirname(os.path.abspath(__file__))
+
+    df_path = os.path.join(BASE, "src", "data_sample", "Datos_paises_despivotados.xlsx")
+    target_path = os.path.join(BASE, "src", "data_sample", "TARGET.xlsx")
+
+    df = pd.read_excel(df_path)
+    target = pd.read_excel(target_path)
 
     #datos
-    df = pd.read_excel("./src/data_sample/Datos_paises_despivotados.xlsx")
-    target = pd.read_excel("./src/data_sample/TARGET.xlsx")
+    # df = pd.read_excel("./src/data_sample/Datos_paises_despivotados.xlsx")
+    # target = pd.read_excel("./src/data_sample/TARGET.xlsx")
 
     # target
     df = construir_target(df, target)
