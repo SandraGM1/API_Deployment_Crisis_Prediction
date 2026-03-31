@@ -99,8 +99,15 @@ COLS_FINAL = [
 
 
 def train_model():
+    BASE = os.path.dirname(os.path.abspath(__file__))
 
-    # 1. Importo los nuevos datos:
+    df_path = os.path.join(BASE, "src", "data_sample", "Datos_paises_despivotados.xlsx")
+    target_path = os.path.join(BASE, "src", "data_sample", "TARGET.xlsx")
+
+    df = pd.read_excel(df_path)
+    target = pd.read_excel(target_path)
+
+    #datos
     df = pd.read_excel("./src/data_sample/Datos_paises_despivotados.xlsx")
     target = pd.read_excel("./src/data_sample/TARGET.xlsx")
 
@@ -183,10 +190,10 @@ def train_model():
     pipe.fit(X, y)
 
 
-    # guardar modelo y pipeline completo
+    #gyardar modelo y pipeline completo
     with open("modelo_xgb.pkl", "wb") as f:
         pickle.dump(pipe, f)
-        
+
     print("Modelo guardado correctamente")
 
     return {
