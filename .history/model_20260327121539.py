@@ -1,0 +1,176 @@
+import pandas as pd
+import pickle
+from functools import partial
+from xgboost import XGBClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import PowerTransformer, RobustScaler
+from sklearn.impute import SimpleImputer
+from sklearn.model_selection import train_test_split,cross_val_score
+from sklearn.metrics import classification_report,confusion_matrix,roc_auc_score,balanced_accuracy_score
+from src.utils.funciones_pipeline import pipeline,cols_nulos_wrapper,relleno_nulos_wrapper
+import os
+
+os.chdir(os.path.dirname(__file__)) #cambio de directorio
+
+#target
+def construir_target(df, target):
+
+    import re
+
+    t = target[target["Country"].notna()].copy()
+    t = t[~t["Country"].astype(str).str.fullmatch(r"\d{4}")]
+    t = t[t["Country"].str.lower() != "total"]
+    t = t[~t["Country"].astype(str).str.startswith("1/")]
+
+    def extract_years(x):
+        if pd.isna(x):
+            return []
+        return [int(y) for y in re.findall(r"\d{4}", str(x))]
+
+    crisis_cols = {
+        "banking_start": "Systemic Banking Crisis (starting date)",
+        "currency": "Currency Crisis",
+        "sovereign_debt": "Sovereign Debt Crisis (year)",
+        "debt_restruct": "Sovereign Debt Restructuring (year)"
+    }
+
+    rows = []
+    for crisis_type, col in crisis_cols.items():
+        tmp = t[["Country", col]].copy()
+        tmp["year"] = tmp[col].apply(extract_years)
+        tmp = tmp.explode("year").dropna(subset=["year"])
+        tmp["crisis_type"] = crisis_type
+        rows.append(tmp[["Country", "crisis_type", "year"]])
+
+    events_long = pd.concat(rows, ignore_index=True).drop_duplicates()
+
+    events_wide = (
+        events_long.assign(value=1)
+        .pivot_table(index=["Country", "year"],
+                     columns="crisis_type",
+                     values="value",
+                     aggfunc="max",
+                     fill_value=0)
+        .reset_index()
+    )
+
+    cols = ["banking_start", "currency", "debt_restruct", "sovereign_debt"]
+    events_wide["Crisis"] = (events_wide[cols].sum(axis=1) > 0).astype(int)
+
+    crisis_start = events_wide.loc[events_wide.Crisis > 0, ["Country", "year"]]
+    crisis_start["year_pred"] = crisis_start["year"] - 1
+    crisis_start["crisis_target"] = 1
+
+    keys = crisis_start[["Country", "year_pred"]].drop_duplicates()
+    keys = keys.rename(columns={"Country": "Country Name", "year_pred": "year"})
+
+    df["crisis_target"] = 0
+    df = df.merge(keys.assign(crisis_target=1),
+                  on=["Country Name", "year"],
+                  how="left",
+                  suffixes=("", "_y"))
+
+    df["crisis_target"] = df["crisis_target_y"].fillna(df["crisis_target"]).astype(int)
+    df = df.drop(columns=["crisis_target_y"])
+
+    return df
+
+
+#train
+def train_model():
+
+    #datos
+    df = pd.read_excel("./src/data_sample/Datos_paises_despivotados.xlsx")
+    target = pd.read_excel("./src/data_sample/TARGET.xlsx")
+
+    # target
+    df = construir_target(df, target)
+
+    #preprocesado antes de guardar elmodelo
+    p = pipeline(cols_nulos_wrapper)
+    df = p(df)
+
+    p = pipeline(partial(relleno_nulos_wrapper, how="mean"))
+    df = p(df)
+
+    #cols finales
+    cols_final = [
+        'Deposit interest rate (%)',
+        'Broad money (% of GDP)',
+        'Exports of goods and services (current US$)',
+        'Imports of goods and services (current US$)',
+        'External debt stocks (% of GNI)',
+        'Total debt service (% of exports of goods, services and primary income)',
+        'GDP growth (annual %)',
+        'GDP per capita growth (annual %)',
+        'Foreign direct investment, net inflows (% of GDP)',
+        'Inflation, consumer prices (annual %)'
+    ]
+
+    X = df[cols_final]
+    y = df["crisis_target"]
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, shuffle=False)
+
+
+    #prep
+    preprocessing = ColumnTransformer(
+        transformers=[
+        ("impute_num", SimpleImputer(strategy="median"), cols_final)
+    ],
+    remainder="passthrough"
+)
+
+    # scale_pos_weight
+    n_pos = (y == 1).sum()
+    n_neg = (y == 0).sum()
+    spw = n_neg / n_pos
+
+    #XGBoost
+    model = XGBClassifier(
+    colsample_bytree=0.7,
+    learning_rate=0.01,
+    max_depth=3,
+    n_estimators=300,
+    scale_pos_weight=spw,
+    eval_metric='aucpr',
+    random_state=42
+)
+
+    #pipeline
+    pipe = Pipeline([
+        ("preprocess", preprocessing),
+        ("model", model)
+    ])
+
+    cv_scores = cross_val_score(pipe, X_train, y_train, cv=4,
+                                scoring="balanced_accuracy")
+    print("Balanced Accuracy CV:", cv_scores.mean())
+    #entrenar train
+    pipe.fit(X_train, y_train)
+
+
+    #preds
+    y_pred = pipe.predict(X_test)
+    y_proba = pipe.predict_proba(X_test)[:, 1]
+
+    #metricas
+    print("Métricas de ML_CRISIS_PREDICTION")
+    print("Balanced Accuracy:", balanced_accuracy_score(y_test, y_pred))
+    print("ROC-AUC:", roc_auc_score(y_test, y_proba))
+    print("\nClassification Report:")
+    print(classification_report(y_test, y_pred))
+    print("\nMatriz de confusión:")
+    print(confusion_matrix(y_test, y_pred))
+
+    #entrenar con todo
+    pipe.fit(X, y)
+
+
+    #gyardar modelo y pipeline completo
+    with open("modelo_xgb.pkl", "wb") as f:
+        pickle.dump(pipe, f)
+        
+    print("Modelo guardado correctamente")
+

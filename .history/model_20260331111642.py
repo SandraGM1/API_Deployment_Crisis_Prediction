@@ -322,7 +322,7 @@ def predict_new_file():
     df['prediction'] = y_pred
 
     # 7. Guardar resultado en un nuevo Excel:
-    output_path = "./src/new_data/Predicciones_new.xlsx"
+    output_path = "./src/new_data/Datos_paises_new.xlsx"
     df.to_excel(output_path,index=False)
 
     # 8. Devolver informacion útil:

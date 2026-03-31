@@ -131,7 +131,7 @@ def train_model():
     # )
 
     # 6. Cargar el modelo:
-    with open('modelo_xgb.pkl', 'rb') as f:
+    with open('model_xgb.pkl', 'rb') as f:
         trained_model = pickle.load(f)
 
     # 8. Pipeline
@@ -310,7 +310,7 @@ def predict_new_file():
     X = df[COLS_FINAL].copy()
 
     # 4. Cargar el modelo:
-    with open('modelo_xgb_2.pkl', 'rb') as f:
+    with open('model_xgb.pkl', 'rb') as f:
         trained_model = pickle.load(f)
 
     # 5. Predecir probabilidades y clases:
@@ -322,7 +322,7 @@ def predict_new_file():
     df['prediction'] = y_pred
 
     # 7. Guardar resultado en un nuevo Excel:
-    output_path = "./src/new_data/Predicciones_new.xlsx"
+    output_path = "./src/new_data/Datos_paises_new.xlsx"
     df.to_excel(output_path,index=False)
 
     # 8. Devolver informacion útil:

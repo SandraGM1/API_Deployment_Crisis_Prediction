@@ -82,7 +82,6 @@ def construir_target(df, target):
 THRESHOLD = 0.45
 
 COLS_FINAL = [
-    "Bank nonperforming loans to total gross loans (%)",
     'Deposit interest rate (%)',
     'Broad money (% of GDP)',
     'Exports of goods and services (current US$)',
@@ -92,9 +91,7 @@ COLS_FINAL = [
     'GDP growth (annual %)',
     'GDP per capita growth (annual %)',
     'Foreign direct investment, net inflows (% of GDP)',
-    'Inflation, consumer prices (annual %)',
-    "some_null",
-    "count_null"
+    'Inflation, consumer prices (annual %)'
 ]
 
 
@@ -131,7 +128,7 @@ def train_model():
     # )
 
     # 6. Cargar el modelo:
-    with open('modelo_xgb.pkl', 'rb') as f:
+    with open('model_xgb.pkl', 'rb') as f:
         trained_model = pickle.load(f)
 
     # 8. Pipeline
@@ -183,20 +180,11 @@ def train_model():
     pipe.fit(X, y)
 
 
-    # guardar modelo y pipeline completo
+    #gyardar modelo y pipeline completo
     with open("modelo_xgb.pkl", "wb") as f:
         pickle.dump(pipe, f)
         
     print("Modelo guardado correctamente")
-
-    return {
-        "status" : "Ok",
-        "message" : "Modelo guardado correctamente",
-        "Balanced Accuracy" : balanced_accuracy_score(y_test, y_pred),
-        "ROC-AUC" : roc_auc_score(y_test, y_proba),
-        "Class.Report" : classification_report(y_test, y_pred, output_dict=True),
-        "Confusion_Matrix" : confusion_matrix(y_test, y_pred).tolist()
-    } 
 
 
 
@@ -205,9 +193,10 @@ def train_new_model():
 
     # 1. Importo los nuevos datos:
     df = pd.read_excel("./src/new_data/Datos_paises_despivotados.xlsx")
+    target = pd.read_excel("./src/new_data/TARGET.xlsx")
 
     # 2. Tratamiento del target:
-    # df = construir_target(df, target)
+    df = construir_target(df, target)
 
     # 2. Preprocesado [Tratamiento de nulos]
     p = pipeline(cols_nulos_wrapper)
@@ -218,7 +207,7 @@ def train_new_model():
 
     # 3. X e y:
     X = df[COLS_FINAL].copy()
-    y = df["target"]
+    y = df["crisis_target"]
 
     # 4. Muestras para el entreno del modelo:
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, shuffle=False)
@@ -279,7 +268,7 @@ def train_new_model():
     pipe.fit(X, y)
 
     # 9. Guardar modelo y pipeline completo
-    with open("modelo_xgb_2.pkl", "wb") as f:
+    with open("modelo_xgb.pkl", "wb") as f:
         pickle.dump(pipe, f)
 
     # 10. Devolver informacion útil:
@@ -310,7 +299,7 @@ def predict_new_file():
     X = df[COLS_FINAL].copy()
 
     # 4. Cargar el modelo:
-    with open('modelo_xgb_2.pkl', 'rb') as f:
+    with open('model_xgb.pkl', 'rb') as f:
         trained_model = pickle.load(f)
 
     # 5. Predecir probabilidades y clases:
@@ -322,7 +311,7 @@ def predict_new_file():
     df['prediction'] = y_pred
 
     # 7. Guardar resultado en un nuevo Excel:
-    output_path = "./src/new_data/Predicciones_new.xlsx"
+    output_path = "./src/new_data/Datos_paises_new.xlsx"
     df.to_excel(output_path,index=False)
 
     # 8. Devolver informacion útil:

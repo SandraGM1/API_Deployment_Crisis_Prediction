@@ -26,7 +26,6 @@ model = load_model()
 def load_model_2():
     with open("modelo_xgb_2.pkl", "rb") as f:
         return pickle.load(f)
-new_model = load_model_2()
 
 
 
@@ -115,9 +114,6 @@ def new_predict_json():
             return jsonify({"error": "No se recibió JSON"}), 400
 
         df = pd.DataFrame([data])
-        df = df[COLS_FINAL].copy()
-        for col in COLS_FINAL:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
         missing = [col for col in df.columns if df[col].isna().any()]
 
         proba = float(new_model.predict_proba(df)[0, 1])
