@@ -224,8 +224,11 @@ def retrain():
 def metrics():
     try:
         # 1. Cargar datos originales
-        df = pd.read_excel("./src/data_sample/Datos_paises_despivotados.xlsx")
-        target = pd.read_excel("./src/data_sample/TARGET.xlsx")
+        BASE = os.path.dirname(os.path.abspath(__file__))
+
+        df = pd.read_excel(os.path.join(BASE, "src/data_sample/Datos_paises_despivotados.xlsx"))
+        target = pd.read_excel(os.path.join(BASE, "src/data_sample/TARGET.xlsx"))
+
 
         # 2. Construir target igual que en train_model()
         df = construir_target(df, target)
