@@ -16,13 +16,20 @@ last_prediction = None
 app = Flask(__name__) #instancia aplicacion de flask
 
 # Carga el modelo
+# 1º modelo:
 def load_model():
-    BASE = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(BASE, "modelo_xgb.pkl")
-    with open(model_path, "rb") as f:
+    with open("modelo_xgb.pkl", "rb") as f:
         return pickle.load(f)
-
 model = load_model()
+
+# Modelo nuevo
+def load_model_2():
+    with open("modelo_xgb_2.pkl", "rb") as f:
+        return pickle.load(f)
+new_model = load_model_2()
+
+
+
 #threshold definido en la API, lo ponemos aquí porque guardamos el modelo sin definir el threshold y además así podemos cambiarlo.
 THRESHOLD = 0.45
 
@@ -48,10 +55,21 @@ COLS_FINAL = [
 def home():
     return """
     <h2>API ML_Crisis_Prediction</h2>
-    <p>Usa el endpoint <b>/metrics</b> con método GET para obtener información sobre la métricas.</p>
-    <p>Usa el endpoint <b>/predict</b> con método POST para obtener una predicción. (Tip: envía un JSON con las variables de entrada del modelo en Postman!)</p>
-    <p>usa el endpoint <b>/prediction</b> con método GET para visualizar la predicción del modelo.</p>
-    <p>También puedes reentrenar el modelo con el endpoint <b>/retrain</b> y el método GET .</p>
+
+    <h3>Modelo original</h3>
+    <p><b>/predict</b> → método <b>POST</b>. Sirve para mandar un JSON en Postman y obtener una predicción con el modelo original.</p>
+    <p><b>/prediction</b> → método <b>GET</b>. Sirve para ver en navegador la última predicción realizada.</p>
+    <p><b>/metrics</b> → método <b>GET</b>. Sirve para ver las métricas del modelo original cargado.</p>
+    <p><b>/retrain</b> → método <b>GET</b>. Sirve para reentrenar el modelo original.</p>
+
+    <h3>Modelo nuevo</h3>
+    <p><b>/new-retrain</b> → método <b>GET</b>. Sirve para entrenar el modelo nuevo y devolver sus métricas.</p>
+    <p><b>/new-predict-json</b> → método <b>POST</b>. Sirve para mandar un JSON en Postman y obtener una predicción con el modelo nuevo.</p>
+    <p><b>/new-predict</b> → método <b>GET</b>. Sirve para leer el Excel nuevo del servidor y generar predicciones por archivo con el modelo nuevo.</p>
+
+    <h3>Importante</h3>
+    <p>Los endpoints con método <b>GET</b> se pueden abrir directamente en el navegador.</p>
+    <p>Los endpoints con método <b>POST</b> se prueban en <b>Postman</b>, porque necesitan que se les envíe un JSON.</p>
     """
 
 # [POSTMAN] Enruta la funcion al endpoint /predict ocn el método POST en el BODY (no header, no args, sino json)
@@ -135,7 +153,7 @@ def new_predict_json():
 
 
 ################
-@app.route("/new-predict", methods=["POST"])
+@app.route("/new-predict", methods=["GET"])
 def new_predict():
     try:
         results = predict_new_file()
