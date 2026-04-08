@@ -9,7 +9,7 @@ from model import *
 
 from functools import partial
 
-os.chdir(os.path.dirname(__file__)) #cambio de directorio
+#os.chdir(os.path.dirname(__file__)) #cambio de directorio
 #para poder mostrar depsués la última predicción
 last_prediction = None
 
@@ -226,8 +226,8 @@ def metrics():
         # 1. Cargar datos originales
         BASE = os.path.dirname(os.path.abspath(__file__))
 
-        df = pd.read_excel(os.path.join(BASE, "src/data_sample/Datos_paises_despivotados.xlsx"))
-        target = pd.read_excel(os.path.join(BASE, "src/data_sample/TARGET.xlsx"))
+        df = pd.read_excel(os.path.join(BASE, "Datos_paises_despivotados.xlsx"))
+        target = pd.read_excel(os.path.join(BASE, "TARGET.xlsx"))
 
 
         # 2. Construir target igual que en train_model()

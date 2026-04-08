@@ -8,10 +8,10 @@ from sklearn.preprocessing import PowerTransformer, RobustScaler
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split,cross_val_score
 from sklearn.metrics import classification_report,confusion_matrix,roc_auc_score,balanced_accuracy_score
-from src.utils.funciones_pipeline import pipeline,cols_nulos_wrapper,relleno_nulos_wrapper
+from funciones_pipeline import pipeline,cols_nulos_wrapper,relleno_nulos_wrapper
 import os
 
-os.chdir(os.path.dirname(__file__)) #cambio de directorio
+#os.chdir(os.path.dirname(__file__)) #cambio de directorio
 
 #target
 def construir_target(df, target):
@@ -101,8 +101,10 @@ COLS_FINAL = [
 def train_model():
 
     # 1. Importo los nuevos datos:
-    df = pd.read_excel("./src/data_sample/Datos_paises_despivotados.xlsx")
-    target = pd.read_excel("./src/data_sample/TARGET.xlsx")
+    BASE = os.path.dirname(os.path.abspath(__file__))
+
+    df = pd.read_excel(os.path.join(BASE, "Datos_paises_despivotados.xlsx"))
+    target = pd.read_excel(os.path.join(BASE, "TARGET.xlsx"))
 
     # 2. Tratamiento del target:
     df = construir_target(df, target)
@@ -204,7 +206,10 @@ def train_model():
 def train_new_model():
 
     # 1. Importo los nuevos datos:
-    df = pd.read_excel("./src/new_data/Datos_paises_new.xlsx")
+    BASE = os.path.dirname(os.path.abspath(__file__))
+
+    df = pd.read_excel(os.path.join(BASE, "Datos_paises_new.xlsx"))
+
 
     # 2. Tratamiento del target:
     # df = construir_target(df, target)
@@ -297,7 +302,10 @@ def train_new_model():
 
 def predict_new_file():
     # 1. Leer archivo nuevo:
-    df = pd.read_excel("./src/new_data/Datos_paises_new.xlsx")
+    BASE = os.path.dirname(os.path.abspath(__file__))
+
+    df = pd.read_excel(os.path.join(BASE, "Datos_paises_new.xlsx"))
+    output_path = os.path.join(BASE, "Predicciones_new.xlsx")
 
     # 2. Preprocesado [Tratamiento de nulos]
     p = pipeline(cols_nulos_wrapper)
@@ -322,8 +330,10 @@ def predict_new_file():
     df['prediction'] = y_pred
 
     # 7. Guardar resultado en un nuevo Excel:
-    output_path = "./src/new_data/Predicciones_new.xlsx"
-    df.to_excel(output_path,index=False)
+    output_path = os.path.join(BASE, "Predicciones_new.xlsx")
+    df.to_excel(output_path, index=False)
+
+
 
     # 8. Devolver informacion útil:
     return {
