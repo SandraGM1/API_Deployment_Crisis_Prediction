@@ -227,7 +227,7 @@ def metrics():
         BASE = os.path.dirname(os.path.abspath(__file__))
 
         df = pd.read_excel(os.path.join(BASE, "Datos_paises_despivotados.xlsx"))
-        target = pd.read_excel(os.path.join(BASE, "TARGET.xlsx"))
+        target = pd.read_excel(os.path.join(BASE, "TARGET.xlsx"),nrows=500)
 
 
         # 2. Construir target igual que en train_model()
