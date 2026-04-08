@@ -226,7 +226,7 @@ def metrics():
         # 1. Cargar datos originales
         BASE = os.path.dirname(os.path.abspath(__file__))
 
-        df = pd.read_excel(os.path.join(BASE, "Datos_paises_despivotados.xlsx"))
+        df = pd.read_excel(os.path.join(BASE, "Datos_paises_despivotados.xlsx"),nrows=500)
         target = pd.read_excel(os.path.join(BASE, "TARGET.xlsx"),nrows=500)
 
 
