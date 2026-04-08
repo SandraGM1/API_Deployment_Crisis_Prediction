@@ -7,7 +7,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, 
 import numpy as np
 from model import *
 
-from functools import partial
+
 
 os.chdir(os.path.dirname(__file__)) #cambio de directorio
 #para poder mostrar depsués la última predicción
@@ -16,31 +16,21 @@ last_prediction = None
 app = Flask(__name__) #instancia aplicacion de flask
 
 # Carga el modelo
+# 1º modelo:
 def load_model():
-    BASE = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(BASE, "modelo_xgb.pkl")
-    with open(model_path, "rb") as f:
+    with open("modelo_xgb.pkl", "rb") as f:
+        return pickle.load(f)
+model = load_model()
+
+# Modelo nuevo
+def load_model_2():
+    with open("modelo_xgb_2.pkl", "rb") as f:
         return pickle.load(f)
 
-model = load_model()
+
+
 #threshold definido en la API, lo ponemos aquí porque guardamos el modelo sin definir el threshold y además así podemos cambiarlo.
 THRESHOLD = 0.45
-
-COLS_FINAL = [
-    "Bank nonperforming loans to total gross loans (%)",
-    'Deposit interest rate (%)',
-    'Broad money (% of GDP)',
-    'Exports of goods and services (current US$)',
-    'Imports of goods and services (current US$)',
-    'External debt stocks (% of GNI)',
-    'Total debt service (% of exports of goods, services and primary income)',
-    'GDP growth (annual %)',
-    'GDP per capita growth (annual %)',
-    'Foreign direct investment, net inflows (% of GDP)',
-    'Inflation, consumer prices (annual %)',
-    "some_null",
-    "count_null"
-]
 
 
 # Enruta la landing page (endpoint /)
@@ -97,43 +87,6 @@ def get_last_prediction():
         "last_prediction": last_prediction
     })
 
-@app.route("/new-predict-json", methods=["POST"])
-def new_predict_json():
-    try:
-        global last_prediction
-
-        data = request.get_json()
-
-        if not data:
-            return jsonify({"error": "No se recibió JSON"}), 400
-
-        df = pd.DataFrame([data])
-        df = df[COLS_FINAL].copy()
-        for col in COLS_FINAL:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-        missing = [col for col in df.columns if df[col].isna().any()]
-
-        proba = float(new_model.predict_proba(df)[0, 1])
-        pred = int(proba >= THRESHOLD)
-
-        result = {
-            "prediction": pred,
-            "probability": proba,
-            "threshold_used": THRESHOLD,
-            "model_used": "modelo_xgb_2.pkl"
-        }
-
-        if missing:
-            result["warning"] = f"Valores faltantes imputados: {', '.join(missing)}"
-
-        last_prediction = result
-        return jsonify(result)
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-
 ################
 @app.route("/new-predict", methods=["POST"])
 def new_predict():
@@ -184,6 +137,8 @@ def new_retrain():
 def retrain():
 
     try:
+        from model import train_model # CREO QUE ESTO SOBRA.
+
         # Reentrenar modelo
         train_model()
 
@@ -212,24 +167,16 @@ def metrics():
         # 2. Construir target igual que en train_model()
         df = construir_target(df, target)
 
-        # 3. Mismo preprocesado que en entrenamiento
-        p = pipeline(cols_nulos_wrapper)
-        df = p(df)
-
-        p = pipeline(partial(relleno_nulos_wrapper, how="mean"))
-        df = p(df)
-
         # 3. X e y (sin columnas manuales)
-        X = df[COLS_FINAL].copy()
+        X = df.drop(columns=["crisis_target"])
         y = df["crisis_target"]
 
-        # 4. Predicciones del modelo original
+        # 4. Predicciones del modelo ACTUAL (original o reentrenado)
+        y_pred = model.predict(X)
         y_proba = model.predict_proba(X)[:, 1]
-        y_pred = (y_proba >= THRESHOLD).astype(int)
 
         # 5. Métricas
         results = {
-            "status": "ok",
             "balanced_accuracy": float(balanced_accuracy_score(y, y_pred)),
             "roc_auc": float(roc_auc_score(y, y_proba)),
             "confusion_matrix": confusion_matrix(y, y_pred).tolist(),

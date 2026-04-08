@@ -99,15 +99,8 @@ COLS_FINAL = [
 
 
 def train_model():
-    BASE = os.path.dirname(os.path.abspath(__file__))
 
-    df_path = os.path.join(BASE, "src", "data_sample", "Datos_paises_despivotados.xlsx")
-    target_path = os.path.join(BASE, "src", "data_sample", "TARGET.xlsx")
-
-    df = pd.read_excel(df_path)
-    target = pd.read_excel(target_path)
-
-    #datos
+    # 1. Importo los nuevos datos:
     df = pd.read_excel("./src/data_sample/Datos_paises_despivotados.xlsx")
     target = pd.read_excel("./src/data_sample/TARGET.xlsx")
 
@@ -138,7 +131,7 @@ def train_model():
     # )
 
     # 6. Cargar el modelo:
-    with open('modelo_xgb.pkl', 'rb') as f:
+    with open('model_xgb.pkl', 'rb') as f:
         trained_model = pickle.load(f)
 
     # 8. Pipeline
@@ -190,10 +183,10 @@ def train_model():
     pipe.fit(X, y)
 
 
-    #gyardar modelo y pipeline completo
+    # guardar modelo y pipeline completo
     with open("modelo_xgb.pkl", "wb") as f:
         pickle.dump(pipe, f)
-
+        
     print("Modelo guardado correctamente")
 
     return {
@@ -317,7 +310,7 @@ def predict_new_file():
     X = df[COLS_FINAL].copy()
 
     # 4. Cargar el modelo:
-    with open('modelo_xgb_2.pkl', 'rb') as f:
+    with open('model_xgb.pkl', 'rb') as f:
         trained_model = pickle.load(f)
 
     # 5. Predecir probabilidades y clases:
@@ -329,7 +322,7 @@ def predict_new_file():
     df['prediction'] = y_pred
 
     # 7. Guardar resultado en un nuevo Excel:
-    output_path = "./src/new_data/Predicciones_new.xlsx"
+    output_path = "./src/new_data/Datos_paises_new.xlsx"
     df.to_excel(output_path,index=False)
 
     # 8. Devolver informacion útil:

@@ -7,7 +7,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_percentage_error, 
 import numpy as np
 from model import *
 
-from functools import partial
+
 
 os.chdir(os.path.dirname(__file__)) #cambio de directorio
 #para poder mostrar depsués la última predicción
@@ -16,13 +16,19 @@ last_prediction = None
 app = Flask(__name__) #instancia aplicacion de flask
 
 # Carga el modelo
+# 1º modelo:
 def load_model():
-    BASE = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(BASE, "modelo_xgb.pkl")
-    with open(model_path, "rb") as f:
+    with open("modelo_xgb.pkl", "rb") as f:
+        return pickle.load(f)
+model = load_model()
+
+# Modelo nuevo
+def load_model_2():
+    with open("modelo_xgb_2.pkl", "rb") as f:
         return pickle.load(f)
 
-model = load_model()
+
+
 #threshold definido en la API, lo ponemos aquí porque guardamos el modelo sin definir el threshold y además así podemos cambiarlo.
 THRESHOLD = 0.45
 
@@ -97,43 +103,6 @@ def get_last_prediction():
         "last_prediction": last_prediction
     })
 
-@app.route("/new-predict-json", methods=["POST"])
-def new_predict_json():
-    try:
-        global last_prediction
-
-        data = request.get_json()
-
-        if not data:
-            return jsonify({"error": "No se recibió JSON"}), 400
-
-        df = pd.DataFrame([data])
-        df = df[COLS_FINAL].copy()
-        for col in COLS_FINAL:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-        missing = [col for col in df.columns if df[col].isna().any()]
-
-        proba = float(new_model.predict_proba(df)[0, 1])
-        pred = int(proba >= THRESHOLD)
-
-        result = {
-            "prediction": pred,
-            "probability": proba,
-            "threshold_used": THRESHOLD,
-            "model_used": "modelo_xgb_2.pkl"
-        }
-
-        if missing:
-            result["warning"] = f"Valores faltantes imputados: {', '.join(missing)}"
-
-        last_prediction = result
-        return jsonify(result)
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-
 ################
 @app.route("/new-predict", methods=["POST"])
 def new_predict():
@@ -184,6 +153,8 @@ def new_retrain():
 def retrain():
 
     try:
+        from model import train_model # CREO QUE ESTO SOBRA.
+
         # Reentrenar modelo
         train_model()
 
@@ -223,9 +194,9 @@ def metrics():
         X = df[COLS_FINAL].copy()
         y = df["crisis_target"]
 
-        # 4. Predicciones del modelo original
+        # 4. Predicciones del modelo ACTUAL (original o reentrenado)
+        y_pred = model.predict(X)
         y_proba = model.predict_proba(X)[:, 1]
-        y_pred = (y_proba >= THRESHOLD).astype(int)
 
         # 5. Métricas
         results = {
